@@ -14,13 +14,18 @@ const (
 )
 
 var (
+	// dbPath defines the file path for the BoltDB database.
+	// It is configurable via the environment variable "DB_PATH" (default: "l1_data.db").
 	dbPath = environment.GetString("DB_PATH", "l1_data.db")
 )
 
+// Persistor handles database interactions for storing and retrieving indexed blockchain data.
 type Persistor struct {
 	db *bolt.DB
 }
 
+// NewPersistor initializes and returns a new Persistor instance.
+// It opens a BoltDB database at the configured path.
 func NewPersistor() (*Persistor, error) {
 	db, err := bolt.Open(dbPath, 0600, nil)
 	if err != nil {
@@ -32,10 +37,15 @@ func NewPersistor() (*Persistor, error) {
 	}, nil
 }
 
+// Close shuts down the database connection.
 func (p *Persistor) Close() {
 	p.db.Close()
 }
 
+// StartDB initializes the database buckets based on the indexing mode.
+// If the mode is "range", it resets the database by deleting existing buckets.
+// If the mode is "full" and the previous mode was "range", it deletes the existing buckets.
+// If the mode is "full" and the previous mode was also "full", it keeps existing data.
 func (p *Persistor) StartDB(mode types.Mode) error {
 	return p.db.Update(func(tx *bolt.Tx) error {
 		if mode == types.ModeRange {
@@ -91,6 +101,8 @@ func (p *Persistor) StartDB(mode types.Mode) error {
 	})
 }
 
+// GetLastBlockIndex retrieves the last indexed block number from the database.
+// Returns -1 if no block index is found.
 func (p *Persistor) GetLastBlockIndex() (int, error) {
 	var block int
 
@@ -114,6 +126,7 @@ func (p *Persistor) GetLastBlockIndex() (int, error) {
 	return block, nil
 }
 
+// SaveData persists indexed blockchain events and updates the last indexed block.
 func (p *Persistor) SaveData(registers []types.Register, lastBlock int) error {
 	return p.db.Update(func(tx *bolt.Tx) error {
 		dataBucket := tx.Bucket([]byte(dataBucketName))
@@ -136,6 +149,8 @@ func (p *Persistor) SaveData(registers []types.Register, lastBlock int) error {
 	})
 }
 
+// GetPaginated retrieves a paginated list of indexed data.
+// It fetches `limit` number of items starting from `startIndex` and returns the next index.
 func (p *Persistor) GetPaginated(startIndex int, limit int) ([]*types.IndexedDataJSON, int, error) {
 	var results []*types.IndexedDataJSON
 	nextIndex := startIndex

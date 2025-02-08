@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
@@ -19,10 +18,15 @@ import (
 
 var (
 	parsedABIEvent *abi.Event
-	file           *os.File
-	inputAddress   = environment.MustGetString("ADDRESS")
-	inputTopic     = environment.MustGetString("TOPIC")
-	concurrency    = environment.GetInt64("CONCURRENCY", 100)
+	// inputAddress specifies the Ethereum address to fetch data from.
+	// It is configurable via the environment variable "ADDRESS"
+	inputAddress = environment.MustGetString("ADDRESS")
+	// inputTopic specifies the topic hash to fetch data from.
+	// It is configurable via the environment variable "TOPIC"
+	inputTopic = environment.MustGetString("TOPIC")
+	// concurrency defines the number of concurrent fetch operations.
+	// It is configurable via the environment variable "CONCURRENCY"
+	concurrency = environment.GetInt64("CONCURRENCY", 100)
 )
 
 func init() {
@@ -36,12 +40,14 @@ func init() {
 	}
 }
 
+// Fetcher manages the retrieval of blockchain logs and transaction data.
 type Fetcher struct {
 	balancer     types.Balancer
 	synchronizer types.Synchronizer
 	semaphore    *semaphore.Weighted
 }
 
+// NewFetcher creates and returns a new instance of Fetcher with the provided balancer and synchronizer.
 func NewFetcher(b types.Balancer, s types.Synchronizer) *Fetcher {
 	f := &Fetcher{
 		balancer:     b,
@@ -52,6 +58,10 @@ func NewFetcher(b types.Balancer, s types.Synchronizer) *Fetcher {
 	return f
 }
 
+// RequestRange initiates an asynchronous request to fetch data for the specified block range.
+// If the error types.ErrReqTooBig is encountered, the block range is split into two halves and the fetch is retried for each half.
+// If any other error is returned, the function will panic to alert for potential issues with the code or RPC endpoints.
+// This function should be called in a separate goroutine.
 func (f *Fetcher) RequestRange(startBlock, endBlock int) {
 	go f.fetchWithRetry(startBlock, endBlock)
 }
@@ -184,5 +194,6 @@ func (f *Fetcher) fetchWithRetry(startBlock, endBlock int) {
 	}
 
 	fmt.Println("DATA WILL BE LOST IF NO PANIC IS RETURNED, PLEASE REVIEW CODE OR RPC ENDPOINTS")
+	fmt.Println("In full mode, any data saved up until now will not be lost, and when you restart, it will begin from the block after the last saved one.")
 	panic(err)
 }

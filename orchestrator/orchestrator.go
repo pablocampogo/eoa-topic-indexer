@@ -10,10 +10,18 @@ import (
 )
 
 var (
+	// startBlockEnv represents the starting block for range-based processing, if not provided, it defaults to 0.
+	// It is configurable via the environment variable "START_BLOCK".
 	startBlockEnv = int(environment.GetInt64("START_BLOCK", 0))
-	endBlockEnv   = int(environment.GetInt64("END_BLOCK", 0))
-	blockTag      = environment.GetString("BLOCK_TAG", "latest")
-	durationCheck = time.Duration(environment.GetInt64("DURATION_CHECK", 5000)) * time.Millisecond
+	// endBlockEnv represents the ending block for range-based processing, if not provided, it defaults to 0.
+	// It is configurable via the environment variable "END_BLOCK".
+	endBlockEnv = int(environment.GetInt64("END_BLOCK", 0))
+	// blockTag represents the block tag ("latest", "safe" or "finalized") for full processing, defaults to "latest".
+	// It is configurable via the environment variable "BLOCK_TAG".
+	blockTag = environment.GetString("BLOCK_TAG", "latest")
+	// cycleDuration defines the interval between checks for the orchestrator's operation, defaults to 5000 milliseconds (5 seconds).
+	// It is configurable via the environment variable "CYCLE_DURATION".
+	cycleDuration = time.Duration(environment.GetInt64("CYCLE_DURATION", 5000)) * time.Millisecond
 )
 
 var (
@@ -24,6 +32,8 @@ var (
 	}
 )
 
+// Orchestrator is the main struct responsible for managing the synchronization and fetching of blockchain data.
+// It integrates Synchronizer, Fetcher, and Persistor to handle range and full-block processing modes.
 type Orchestrator struct {
 	synchronizer types.Synchronizer
 	fetcher      types.Fetcher
@@ -32,8 +42,9 @@ type Orchestrator struct {
 	mode         types.Mode
 }
 
-func StartOrchestrator(s types.Synchronizer, f types.Fetcher,
-	b types.Balancer, p types.Persistor) error {
+// StartOrchestrator initializes the Orchestrator with the provided components and starts the appropriate processing mode based on environment variables.
+// Returns an error if an invalid tag is provided or if the mode can't be identified.
+func StartOrchestrator(s types.Synchronizer, f types.Fetcher, b types.Balancer, p types.Persistor) error {
 	o := &Orchestrator{
 		synchronizer: s,
 		fetcher:      f,
@@ -41,14 +52,17 @@ func StartOrchestrator(s types.Synchronizer, f types.Fetcher,
 		persistor:    p,
 	}
 
+	// Check if both start and end block are set for range mode
 	if startBlockEnv != 0 && endBlockEnv != 0 {
 		return o.manageRange()
 	}
 
+	// Validate the provided block tag for full mode
 	if !validTags[blockTag] {
 		return errors.New("invalid tag")
 	}
 
+	// If a valid tag is provided, initiate full mode processing
 	if blockTag != "" {
 		return o.manageFull()
 	}
@@ -82,7 +96,7 @@ func (o *Orchestrator) manageFull() error {
 		return err
 	}
 
-	startBlock := lastIndex + 1
+	startBlock := lastIndex + 1 // start block is the block after the one currently saved
 	go o.synchronizer.Start(startBlock)
 	go o.fetcher.RequestRange(startBlock, endBlock)
 	go o.orchestrate(endBlock)
@@ -90,9 +104,12 @@ func (o *Orchestrator) manageFull() error {
 	return nil
 }
 
+// orchestrate manages the periodic orchestration of block fetching based on the current synchronization state and block tag.
+// It periodically checks the synchronizer's current block and compares it with the end block to adjust the fetching range.
+// It restarts the fetching cycle whenever the current block exceeds the expected end block.
 func (o *Orchestrator) orchestrate(endBlock int) {
 	currEndblock := endBlock
-	ticker := time.NewTicker(durationCheck)
+	ticker := time.NewTicker(cycleDuration)
 	defer ticker.Stop()
 
 	for {

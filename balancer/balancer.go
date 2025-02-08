@@ -21,9 +21,17 @@ var (
 	errClientTimeout = errors.New("client timed out")
 	errMaxRetries    = errors.New("max retries reached")
 
-	blockTime    = time.Duration(environment.GetInt64("BLOCK_TIME", 20)) * time.Second
-	rpcTimeout   = time.Duration(environment.GetInt64("RPC_TIMEOUT", 20)) * time.Second
-	maxRounds    = int(environment.GetInt64("MAX_ROUNDS", 3))
+	// blockTime is the duration to block a client after a rate limit or timeout error.
+	// It is configurable via the environment variable "BLOCK_TIME".
+	blockTime = time.Duration(environment.GetInt64("BLOCK_TIME", 20)) * time.Second
+	// rpcTimeout is the maximum time to wait for a response from the RPC endpoint.
+	// It is configurable via the environment variable "RPC_TIMEOUT".
+	rpcTimeout = time.Duration(environment.GetInt64("RPC_TIMEOUT", 20)) * time.Second
+	// maxRounds is the maximum number of retry rounds allowed.
+	// It is configurable via the environment variable "MAX_ROUNDS".
+	maxRounds = int(environment.GetInt64("MAX_ROUNDS", 3))
+	// rpcEndpoints is a list of RPC endpoints to be used for making requests.
+	// It is configurable via the environment variable "ENDPOINTS" with the endpoints separated by a comma.
 	rpcEndpoints = environment.MustGetStringSlice("ENDPOINTS", ",")
 )
 
@@ -33,6 +41,7 @@ type client struct {
 	blockedUntil time.Time
 }
 
+// Balancer manages multiple Ethereum RPC clients and handles retries and balancing of requests.
 type Balancer struct {
 	clients    []*client
 	rwMutex    sync.RWMutex
@@ -40,6 +49,7 @@ type Balancer struct {
 	lenClients int
 }
 
+// NewBalancer initializes and returns a new Balancer instance by connecting to RPC endpoints.
 func NewBalancer() (*Balancer, error) {
 	b := &Balancer{}
 
@@ -95,6 +105,11 @@ func (b *Balancer) isBlocked(index int) bool {
 	return b.clients[index].blockedUntil.IsZero() || time.Now().Before(b.clients[index].blockedUntil)
 }
 
+// GetLogs retrieves logs for a specified block range and topic from available RPC clients.
+// It retries the request for a number of rounds, handling rate limits by blocking temporary clients that return rate-limiting errors.
+// If all retry rounds are used, types.ErrMaxRounds is returned.
+// If the request is too large, types.ErrReqTooBig is returned.
+// It internally handles rate limits and blocks indefinitely clients that return errors other than these.
 func (b *Balancer) GetLogs(startBlock, endBlock int, topic string) ([]gethTypes.Log, error) {
 	input := &genericInput{
 		logs: &logReqInput{
@@ -112,6 +127,11 @@ func (b *Balancer) GetLogs(startBlock, endBlock int, topic string) ([]gethTypes.
 	return output.logs.logs, nil
 }
 
+// GetBlockFromTag retrieves the block number corresponding to a specified block tag.
+// It retries the request for a number of rounds, handling rate limits by blocking temporary clients that return rate-limiting errors.
+// If all retry rounds are used, types.ErrMaxRounds is returned.
+// If the request is too large, types.ErrReqTooBig is returned.
+// It internally handles rate limits and blocks indefinitely clients that return errors other than these.
 func (b *Balancer) GetBlockFromTag(tag string) (int, error) {
 	input := &genericInput{
 		blockTag: &blockTagInput{
@@ -127,6 +147,11 @@ func (b *Balancer) GetBlockFromTag(tag string) (int, error) {
 	return output.blockTag.block, nil
 }
 
+// GetBlocksAndTxs retrieves blocks and transactions for a specified list of block numbers and transaction hashes.
+// It retries the request for a number of rounds, handling rate limits by blocking temporary clients that return rate-limiting errors.
+// If all retry rounds are used, types.ErrMaxRounds is returned.
+// If the request is too large, types.ErrReqTooBig is returned.
+// It internally handles rate limits and blocks indefinitely clients that return errors other than these.
 func (b *Balancer) GetBlocksAndTxs(blockNumbers []uint64, txHashes []common.Hash) ([]*gethTypes.Header, []*gethTypes.Transaction, error) {
 	input := &genericInput{
 		blockAndTxs: &blocksAndTxsReqInput{

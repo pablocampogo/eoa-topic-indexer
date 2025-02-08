@@ -10,6 +10,8 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
+// GetInt64 retrieves an environment variable as an int64. If the variable is not found, it returns the provided default value.
+// If the environment variable exists but cannot be parsed as an int64, it also returns the default value.
 func GetInt64(varName string, defaultValue int64) int64 {
 	val, ok := os.LookupEnv(varName)
 	if !ok {
@@ -24,6 +26,7 @@ func GetInt64(varName string, defaultValue int64) int64 {
 	return iVal
 }
 
+// MustGetString retrieves a string environment variable. If the variable is not found or is empty, it panics with an error message.
 func MustGetString(varName string) string {
 	val, _ := os.LookupEnv(varName)
 	if val == "" {
@@ -33,6 +36,7 @@ func MustGetString(varName string) string {
 	return val
 }
 
+// GetString retrieves an environment variable as a string. If the variable is not found, it returns the provided default value.
 func GetString(varName string, defaultValue string) string {
 	val, _ := os.LookupEnv(varName)
 	if val == "" {
@@ -42,6 +46,8 @@ func GetString(varName string, defaultValue string) string {
 	return val
 }
 
+// MustGetStringSlice retrieves a string environment variable and splits it by the given separator. If the variable is not found, it panics.
+// It returns the resulting slice of strings.
 func MustGetStringSlice(varName, separator string) []string {
 	rawString := MustGetString(varName)
 	return strings.Split(rawString, separator)

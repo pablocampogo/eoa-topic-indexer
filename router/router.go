@@ -16,15 +16,19 @@ import (
 )
 
 var (
+	// port defines the HTTP server port, configurable via the "PORT" environment variable (default: 8080).
 	port = environment.GetString("PORT", "8080")
 )
 
+// Router handles HTTP endpoints for the indexer, providing health checks, data retrieval, and block tracking.
 type Router struct {
 	router       *mux.Router
 	persistor    *persistor.Persistor
 	synchronizer *synchronizer.Synchronizer
 }
 
+// NewRouter initializes a new Router instance, setting up HTTP endpoints for health checks,
+// paginated data retrieval, and tracking the latest indexed block.
 func NewRouter(p *persistor.Persistor, s *synchronizer.Synchronizer) *Router {
 	rt := &Router{
 		persistor:    p,
@@ -80,6 +84,8 @@ func (rt *Router) getLatestBlockIndexed(w http.ResponseWriter, r *http.Request) 
 	w.Write([]byte(strconv.Itoa(currBlock - 1)))
 }
 
+// RunServer starts the HTTP server and listens for incoming requests.
+// It gracefully shuts down when the provided context is canceled.
 func (rt *Router) RunServer(ctx context.Context) {
 	httpServer := &http.Server{
 		Addr:    ":" + port,
