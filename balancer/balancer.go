@@ -140,14 +140,6 @@ func (b *Balancer) GetBlocksAndTxs(blockNumbers []uint64, txHashes []common.Hash
 		return nil, nil, err
 	}
 
-	if output == nil {
-		fmt.Println("OUTPUT NIL")
-	}
-
-	if output.blockAndTxs == nil {
-		fmt.Println("OUTPUT OF BLOCKS NIL")
-	}
-
 	return output.blockAndTxs.blocks, output.blockAndTxs.txs, nil
 }
 
