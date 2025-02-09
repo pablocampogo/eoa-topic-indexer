@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	// syncDuration defines the maximum duration for the synchronization ticker interval.
-	// It is configurable via the environment variable "SYNC_DURATION" (default: 5000ms).
-	syncDuration = time.Duration(environment.GetInt64("SYNC_DURATION", 5000)) * time.Millisecond
+	// syncInterval defines the maximum duration for the synchronization ticker interval.
+	// It is configurable via the environment variable "SYNC_INTERVAL" (default: 5000ms).
+	syncInterval = time.Duration(environment.GetInt64("SYNC_INTERVAL", 5000)) * time.Millisecond
 )
 
 // Synchronizer is responsible for synchronizing and sending to the persistor blockchain data.
@@ -124,7 +124,7 @@ func (s *Synchronizer) save() error {
 func (s *Synchronizer) Start(startBlock int) {
 	fmt.Println("Sync started with block: ", startBlock)
 	s.currBlock.Add(uint64(startBlock))
-	ticker := time.NewTicker(syncDuration)
+	ticker := time.NewTicker(syncInterval)
 	defer ticker.Stop()
 
 	for {

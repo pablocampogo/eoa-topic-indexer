@@ -19,9 +19,9 @@ var (
 	// blockTag represents the block tag ("latest", "safe" or "finalized") for full processing, defaults to "latest".
 	// It is configurable via the environment variable "BLOCK_TAG".
 	blockTag = environment.GetString("BLOCK_TAG", "latest")
-	// cycleDuration defines the interval between checks for the orchestrator's operation, defaults to 5000 milliseconds (5 seconds).
-	// It is configurable via the environment variable "CYCLE_DURATION".
-	cycleDuration = time.Duration(environment.GetInt64("CYCLE_DURATION", 5000)) * time.Millisecond
+	// cycleInterval defines the interval between checks for the orchestrator's operation, defaults to 5000 milliseconds (5 seconds).
+	// It is configurable via the environment variable "CYCLE_INTERVAL".
+	cycleInterval = time.Duration(environment.GetInt64("CYCLE_INTERVAL", 5000)) * time.Millisecond
 )
 
 var (
@@ -109,7 +109,7 @@ func (o *Orchestrator) manageFull() error {
 // It restarts the fetching cycle whenever the current block exceeds the expected end block.
 func (o *Orchestrator) orchestrate(endBlock int) {
 	currEndblock := endBlock
-	ticker := time.NewTicker(cycleDuration)
+	ticker := time.NewTicker(cycleInterval)
 	defer ticker.Stop()
 
 	for {
