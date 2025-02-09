@@ -37,8 +37,10 @@ ENDPOINTS={YOUR_ENDPOINTS}
 # Processing
 
 # START_BLOCK represents the starting block for range-based processing, defaults to 0.
+# If running in full mode, this should be set to 0.
 START_BLOCK=0
 # END_BLOCK represents the ending block for range-based processing, defaults to 0.
+# If running in full mode, this should be set to 0.
 END_BLOCK=0
 # BLOCK_TAG represents the block tag ("latest", "safe" or "finalized") for full processing, defaults to "latest".
 BLOCK_TAG=latest
