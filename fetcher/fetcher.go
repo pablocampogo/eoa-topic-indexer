@@ -193,7 +193,11 @@ func (f *Fetcher) fetchWithRetry(startBlock, endBlock int) {
 		return
 	}
 
-	fmt.Println("DATA WILL BE LOST IF NO PANIC IS RETURNED, PLEASE REVIEW CODE OR RPC ENDPOINTS")
+	fmt.Println("DATA WILL BE LOST IF NO PANIC IS RETURNED, PLEASE REVIEW CODE, CONFIGURATION AND/OR RPC ENDPOINTS")
+	fmt.Println("Tips:")
+	fmt.Println("	1. Most errors are rate limits: increase value in BLOCK_TIME env var")
+	fmt.Println("	2. Most errors are timeouts: increase value in RPC_TIMEOUT env var")
+	fmt.Println("	3. Errors are none of the above: looks at logs and see if a new error code parse case should be added to the balancer/error_code.go file")
 	fmt.Println("In full mode, any data saved up until now will not be lost, and when you restart, it will begin from the block after the last saved one.")
 	panic(err)
 }

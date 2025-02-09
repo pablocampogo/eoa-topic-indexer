@@ -3,7 +3,6 @@ package balancer
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -169,18 +168,23 @@ func (b *Balancer) GetBlocksAndTxs(blockNumbers []uint64, txHashes []common.Hash
 }
 
 func handleRPCError(err error) error {
-	if strings.Contains(err.Error(), "Log response size exceeded") ||
-		strings.Contains(err.Error(), "Sorry, the maximum batch request size is 1000") ||
-		strings.Contains(err.Error(), "query exceeds max block range") ||
-		strings.Contains(err.Error(), "exceeds the maximum allowed content length") {
-		return types.ErrReqTooBig
+	errCode, inErr := getErrCode(err)
+	if inErr != nil {
+		fmt.Println("Unexpected error: ", err.Error())
+		return err
 	}
 
-	if strings.Contains(err.Error(), "Your app has exceeded its compute units per second capacity") {
+	for _, tooBigErrorCode := range tooBigErrorCodes {
+		if errCode == tooBigErrorCode {
+			return types.ErrReqTooBig
+		}
+	}
+
+	if errCode == rateLimitErrorCode {
 		return errRateLimit
 	}
 
-	fmt.Println(err.Error())
+	fmt.Println("Unexpected error: ", err.Error())
 
 	return err
 }

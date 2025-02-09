@@ -73,7 +73,7 @@ RPC_TIMEOUT=60
 # MAX_ROUNDS is the maximum number of retry rounds allowed trying to do the RPC calls, defaults to 3
 MAX_ROUNDS=3
 ```
-**Important note**: for better perfomance, please use Alchemy RPC endpoints.
+**Important note**: For optimal performance when using free nodes, add as many as possible to `ENDPOINTS` and set `RPC_TIMEOUT` to a high value (several minutes), as some requests can be quite resource-intensive.
 
 2. Build the project:
 
